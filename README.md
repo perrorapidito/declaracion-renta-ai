@@ -17,20 +17,68 @@ Hacer la declaracion de la renta es complejo. Hay deducciones que no conoces, ca
 
 Declaracion Renta AI combina dos capas de IA para darte asesoramiento fiscal de nivel profesional **sin comprometer tu privacidad**:
 
-```
-TUS DOCUMENTOS                    TU ORDENADOR                     LA NUBE
-(nominas, certificados,     -->   Gemma 4 (Ollama)           -->   Claude (API)
- datos fiscales AEAT)             Extrae y anonimiza               Analiza y optimiza
-                                  100% LOCAL                       Solo ve cifras
-                                  Tus datos NO salen               Sin datos personales
+### Arquitectura de privacidad
+
+```mermaid
+flowchart LR
+    subgraph LOCAL["🏠 Tu ordenador"]
+        direction TB
+        A["📄 Documentos fiscales\n(nominas, certificados,\ncomunicados bancarios)"]
+        B["🔒 pdftotext\nExtraccion de texto"]
+        C["🤖 Gemma 4 · Ollama\nAnonimizacion"]
+        D["✅ Verificacion\nRegex post-check"]
+        A --> B --> C --> D
+    end
+
+    subgraph CLOUD["☁️ API Claude"]
+        direction TB
+        E["📊 Analisis fiscal\nLiquidacion IRPF"]
+        F["🔍 Auditoria\nDeducciones y\noptimizaciones"]
+        G["📋 Guia paso a paso\nCasillas Renta Web"]
+        E --> F --> G
+    end
+
+    D -- "Solo cifras\nsin datos personales" --> E
+
+    style LOCAL fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+    style CLOUD fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
+    style A fill:#fff,stroke:#666
+    style B fill:#fff,stroke:#666
+    style C fill:#c8e6c9,stroke:#2e7d32
+    style D fill:#c8e6c9,stroke:#2e7d32
+    style E fill:#bbdefb,stroke:#1565c0
+    style F fill:#bbdefb,stroke:#1565c0
+    style G fill:#bbdefb,stroke:#1565c0
 ```
 
-### Arquitectura de privacidad
+> **Principio clave**: Tus datos personales (nombre, NIF, direccion, IBAN) **nunca salen de tu ordenador**.
+> Claude solo recibe cifras anonimizadas: `€2.084,10`, `PAGADOR_1`, `CONTRIBUYENTE`.
+
+### Detalle por capa
 
 | Capa | Donde se ejecuta | Que hace | Datos personales |
 |------|-------------------|----------|------------------|
 | **Capa 1** - Gemma 4 | Tu ordenador (Ollama) | Extrae texto de PDFs y anonimiza nombres, NIF, direcciones, IBAN | **SI los ve**, pero nunca salen de tu maquina |
 | **Capa 2** - Claude | API de Anthropic | Analiza cifras, calcula impuestos, encuentra deducciones | **NUNCA los ve** - solo recibe datos anonimizados |
+
+### Pipeline de anonimizacion
+
+```mermaid
+flowchart TD
+    PDF["📄 PDF fiscal"] --> PDFTOTEXT["pdftotext\n(poppler)"]
+    PDFTOTEXT --> RAW["Texto plano\ncon datos personales"]
+    RAW --> REGEX["🔧 Regex determinista\n\nNIF: 12345678A → [NIF_REDACTADO]\nIBAN: ES12 3456... → [IBAN_REDACTADO]\nEmail, telefono, ref. catastral"]
+    REGEX --> GEMMA["🤖 Gemma 4 (local)\n\nMaría García → CONTRIBUYENTE\nBanco Ejemplo → PAGADOR_1\nC/ Plaza Nueva 7 → [DIRECCIÓN_REDACTADA]"]
+    GEMMA --> CHECK{"✅ Verificacion\n¿Quedan datos\npersonales?"}
+    CHECK -- "No" --> OK["📝 Fichero .md\nanonimizado\n\nSeguro para Claude"]
+    CHECK -- "Si" --> WARN["⚠️ Alerta\nRevision manual"]
+
+    style REGEX fill:#fff3e0,stroke:#e65100
+    style GEMMA fill:#e8f5e9,stroke:#2e7d32
+    style CHECK fill:#fce4ec,stroke:#c62828
+    style OK fill:#e8f5e9,stroke:#2e7d32
+    style WARN fill:#ffebee,stroke:#c62828
+```
 
 ## Que hace
 
@@ -39,6 +87,76 @@ TUS DOCUMENTOS                    TU ORDENADOR                     LA NUBE
 - **Auditoria de optimizacion**: Revisa 18+ deducciones autonomicas (Andalucia) y todas las estatales
 - **Guia paso a paso**: Te indica exactamente que casillas modificar en Renta Web
 - **Comparativa interanual**: Analiza como ha evolucionado tu patrimonio respecto al ejercicio anterior
+
+### Demo: el flujo en accion
+
+<details>
+<summary><strong>Ver demo completa (terminal)</strong></summary>
+
+```
+$ python3 anonimizar.py ~/Descargas/borrador_renta.pdf ~/Descargas/certificado_banco.pdf
+
+============================================================
+  EXTRACTOR FISCAL ANONIMO
+  Modelo: gemma4:e4b (100% local)
+  pdftotext: disponible
+  Archivos: 2
+============================================================
+
+[1/2] Procesando: borrador_renta.pdf
+  Texto extraido: 299 lineas con contenido
+  Paso 1/2: Redaccion automatica (regex)...
+    ├── NIF detectado y redactado
+    ├── IBAN detectado y redactado
+    └── 3 telefonos personales redactados
+  Paso 2/2: Anonimizacion de nombres y direcciones (gemma4:e4b, local)...
+    ├── "Maria Garcia Lopez" → CONTRIBUYENTE
+    ├── "Banco Ejemplo S.A." → PAGADOR_1
+    └── "C/ Plaza Nueva, 7, 3B, Granada" → [DIRECCION_REDACTADA, provincia: GR]
+  ✓  Verificacion OK — no se detectan datos personales residuales
+  Cobertura: 298/299 lineas (100%)
+
+[2/2] Procesando: certificado_banco.pdf
+  Texto extraido: 87 lineas con contenido
+  Paso 1/2: Redaccion automatica (regex)...
+  Paso 2/2: Anonimizacion de nombres y direcciones (gemma4:e4b, local)...
+  ✓  Verificacion OK
+  Cobertura: 87/87 lineas (100%)
+
+============================================================
+  EXTRACCION COMPLETADA
+  Resultado: ./extracciones/fiscal_anonimo_20260420_143200.md
+  Cobertura total: 385/386 lineas (100%)
+============================================================
+
+$ claude
+> /declaracion-renta
+> Aqui tienes mis datos: ./extracciones/fiscal_anonimo_20260420_143200.md
+
+Claude: He analizado tu borrador y certificado bancario. Aqui tienes tu mapa fiscal:
+
+  ════════════════════════════════════════
+           MAPA FISCAL — CONTRIBUYENTE
+           Ejercicio 2025 | Andalucia
+  ════════════════════════════════════════
+  RENTAS
+  ├── Trabajo personal ............. €32.000,00
+  ├── Capital mobiliario ...........    €425,30
+  └── RENTA TOTAL .................. €32.425,30
+
+  RESULTADO SIN OPTIMIZAR: A devolver €985,02
+
+  ⚠ He encontrado 3 optimizaciones por valor de €700:
+  1. Deduccion practica deportiva:     €45
+  2. Aportacion plan de pensiones:    €450
+  3. Donativo a ONG (primeros €250):  €200
+
+  RESULTADO OPTIMIZADO: A devolver €1.685,02
+
+  ¿Quieres que te guie paso a paso para aplicarlas en Renta Web?
+```
+
+</details>
 
 ### Deducciones que revisa automaticamente
 
