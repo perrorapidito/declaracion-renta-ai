@@ -1,6 +1,6 @@
 # Declaracion Renta AI
 
-**Tu asesor fiscal inteligente para la declaracion de la renta (IRPF) en Espana. Privacidad total: tus datos personales nunca salen de tu ordenador.**
+**Usa Cloud Code para la declaracion de la renta (IRPF) en Espana. Privacidad total: tus datos personales nunca salen de tu ordenador.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Python 3.9+](https://img.shields.io/badge/Python-3.9+-blue.svg)](https://www.python.org)
