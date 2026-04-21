@@ -158,7 +158,17 @@ El script genera un fichero Markdown anonimizado en `./extracciones/`. Este fich
 
 Indica la ruta del fichero generado y Claude te guiara paso a paso por toda la declaracion.
 
-## Ejemplo de sesion real
+## Ejemplos
+
+En la carpeta [`examples/`](examples/) encontraras:
+
+| Archivo | Que muestra |
+|---------|-------------|
+| [`ejemplo_documento_original.txt`](examples/ejemplo_documento_original.txt) | Como se ve un documento fiscal **antes** de anonimizar (datos ficticios) |
+| [`ejemplo_documento_anonimizado.md`](examples/ejemplo_documento_anonimizado.md) | El **mismo documento despues** de pasar por el script — sin datos personales |
+| [`ejemplo_sesion_claude.md`](examples/ejemplo_sesion_claude.md) | Una **sesion completa** con Claude: mapa fiscal, liquidacion, optimizaciones y guia paso a paso |
+
+## Ejemplo rapido
 
 ```
 $ python3 anonimizar.py ~/Descargas/borrador_renta_2025.pdf
